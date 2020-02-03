@@ -1,4 +1,4 @@
-#Author - Main project
+# Author - Main project
 https://github.com/marcinKotynia/ExcelToHtml
 
 # ExcelToHtml.dll
