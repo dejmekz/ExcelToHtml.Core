@@ -2,21 +2,48 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 
 namespace ExcelTohtml.Core.Helpers.WkHtmlToPdf
 {
+    [Serializable]
     public class PdfConvertException : Exception
     {
-        public PdfConvertException(String msg) : base(msg)
+        public PdfConvertException()
+        {
+        }
+
+        public PdfConvertException(string message) : base(message)
+        {
+        }
+
+        public PdfConvertException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        protected PdfConvertException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
         }
     }
 
+    [Serializable]
     public class PdfConvertTimeoutException : PdfConvertException
     {
         public PdfConvertTimeoutException() : base("HTML to PDF conversion process has not finished in the given period.")
+        {
+        }
+
+        public PdfConvertTimeoutException(string message) : base(message)
+        {
+        }
+
+        public PdfConvertTimeoutException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        protected PdfConvertTimeoutException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
         }
     }
@@ -53,7 +80,7 @@ namespace ExcelTohtml.Core.Helpers.WkHtmlToPdf
         public bool Debug { get; set; }
     }
 
-    public class PdfConvert
+    public static class PdfConvert
     {
         private static PdfConvertEnvironment _e;
 
@@ -102,7 +129,7 @@ namespace ExcelTohtml.Core.Helpers.WkHtmlToPdf
             if (document.Html != null)
                 document.Url = "-";
 
-            String outputPdfFilePath;
+            string outputPdfFilePath;
             bool delete;
             if (woutput.OutputFilePath != null)
             {
@@ -111,12 +138,12 @@ namespace ExcelTohtml.Core.Helpers.WkHtmlToPdf
             }
             else
             {
-                outputPdfFilePath = Path.Combine(environment.TempFolderPath, String.Format("{0}.pdf", Guid.NewGuid()));
+                outputPdfFilePath = Path.Combine(environment.TempFolderPath, string.Format("{0}.pdf", Guid.NewGuid()));
                 delete = true;
             }
 
             if (!File.Exists(environment.WkHtmlToPdfPath))
-                throw new PdfConvertException(String.Format("File '{0}' not found. Check if wkhtmltopdf application is installed.", environment.WkHtmlToPdfPath));
+                throw new PdfConvertException(string.Format("File '{0}' not found. Check if wkhtmltopdf application is installed.", environment.WkHtmlToPdfPath));
 
             StringBuilder paramsBuilder = new StringBuilder();
             paramsBuilder.Append("--page-size A4 ");
@@ -176,86 +203,81 @@ namespace ExcelTohtml.Core.Helpers.WkHtmlToPdf
                     process.StartInfo.RedirectStandardError = true;
                     process.StartInfo.RedirectStandardInput = true;
 
-                    using (AutoResetEvent outputWaitHandle = new AutoResetEvent(false))
-                    using (AutoResetEvent errorWaitHandle = new AutoResetEvent(false))
+                    using AutoResetEvent outputWaitHandle = new AutoResetEvent(false);
+                    using AutoResetEvent errorWaitHandle = new AutoResetEvent(false);
+
+                    void outputHandler(object sender, DataReceivedEventArgs e)
                     {
-                        DataReceivedEventHandler outputHandler = (sender, e) =>
+                        if (e.Data == null)
                         {
-                            if (e.Data == null)
-                            {
-                                outputWaitHandle.Set();
-                            }
-                            else
-                            {
-                                output.AppendLine(e.Data);
-                            }
-                        };
-
-                        DataReceivedEventHandler errorHandler = (sender, e) =>
+                            outputWaitHandle.Set();
+                        }
+                        else
                         {
-                            if (e.Data == null)
-                            {
-                                errorWaitHandle.Set();
-                            }
-                            else
-                            {
-                                error.AppendLine(e.Data);
-                            }
-                        };
+                            output.AppendLine(e.Data);
+                        }
+                    }
 
-                        process.OutputDataReceived += outputHandler;
-                        process.ErrorDataReceived += errorHandler;
-
-                        try
+                    void errorHandler(object sender, DataReceivedEventArgs e)
+                    {
+                        if (e.Data == null)
                         {
-                            process.Start();
+                            errorWaitHandle.Set();
+                        }
+                        else
+                        {
+                            error.AppendLine(e.Data);
+                        }
+                    }
 
-                            process.BeginOutputReadLine();
-                            process.BeginErrorReadLine();
+                    process.OutputDataReceived += outputHandler;
+                    process.ErrorDataReceived += errorHandler;
 
-                            if (document.Html != null)
+                    try
+                    {
+                        process.Start();
+
+                        process.BeginOutputReadLine();
+                        process.BeginErrorReadLine();
+
+                        if (document.Html != null)
+                        {
+                            using var stream = process.StandardInput;
+                            byte[] buffer = Encoding.UTF8.GetBytes(document.Html);
+                            stream.BaseStream.Write(buffer, 0, buffer.Length);
+                            stream.WriteLine();
+                        }
+
+                        if (process.WaitForExit(environment.Timeout) && outputWaitHandle.WaitOne(environment.Timeout) && errorWaitHandle.WaitOne(environment.Timeout))
+                        {
+                            if (process.ExitCode != 0 && !File.Exists(outputPdfFilePath))
                             {
-                                using (var stream = process.StandardInput)
-                                {
-                                    byte[] buffer = Encoding.UTF8.GetBytes(document.Html);
-                                    stream.BaseStream.Write(buffer, 0, buffer.Length);
-                                    stream.WriteLine();
-                                }
-                            }
-
-                            if (process.WaitForExit(environment.Timeout) && outputWaitHandle.WaitOne(environment.Timeout) && errorWaitHandle.WaitOne(environment.Timeout))
-                            {
-                                if (process.ExitCode != 0 && !File.Exists(outputPdfFilePath))
-                                {
-                                    throw new PdfConvertException(String.Format("Html to PDF conversion of '{0}' failed. Wkhtmltopdf output: \r\n{1}", document.Url, error));
-                                }
-                            }
-                            else
-                            {
-                                if (!process.HasExited)
-                                    process.Kill();
-
-                                throw new PdfConvertTimeoutException();
+                                throw new PdfConvertException(string.Format("Html to PDF conversion of '{0}' failed. Wkhtmltopdf output: \r\n{1}", document.Url, error));
                             }
                         }
-                        finally
+                        else
                         {
-                            process.OutputDataReceived -= outputHandler;
-                            process.ErrorDataReceived -= errorHandler;
+                            if (!process.HasExited)
+                                process.Kill();
+
+                            throw new PdfConvertTimeoutException();
                         }
+                    }
+                    finally
+                    {
+                        process.OutputDataReceived -= outputHandler;
+                        process.ErrorDataReceived -= errorHandler;
                     }
                 }
 
                 if (woutput.OutputStream != null)
                 {
-                    using (Stream fs = new FileStream(outputPdfFilePath, FileMode.Open))
-                    {
-                        byte[] buffer = new byte[32 * 1024];
-                        int read;
+                    using Stream fs = new FileStream(outputPdfFilePath, FileMode.Open);
+                    byte[] buffer = new byte[32 * 1024];
+                    int read;
 
-                        while ((read = fs.Read(buffer, 0, buffer.Length)) > 0)
-                            woutput.OutputStream.Write(buffer, 0, read);
-                    }
+                    while ((read = fs.Read(buffer, 0, buffer.Length)) > 0)
+                        woutput.OutputStream.Write(buffer, 0, read);
                 }
 
                 if (woutput.OutputCallback != null)

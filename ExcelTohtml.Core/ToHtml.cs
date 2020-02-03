@@ -17,7 +17,6 @@ namespace ExcelTohtml.Core
         private readonly string TableStyle = "border-collapse: collapse;font-family: helvetica, arial, sans-serif;";
         private readonly bool DebugMode = false;
 
-        //object Data;
         private string ObjectJson;
 
         public readonly ExcelPackage Excel;
@@ -166,9 +165,9 @@ namespace ExcelTohtml.Core
             DataFromJson(ObjectJson);
         }
 
-        public void DataFromJson(string Json)
+        public void DataFromJson(string objectJson)
         {
-            JObject obj = JObject.Parse(ObjectJson);
+            JObject obj = JObject.Parse(objectJson);
 
             if (this.DebugMode)
                 IterateArray(obj);
@@ -231,8 +230,7 @@ namespace ExcelTohtml.Core
                                 //if more than one for example array do nothing
                                 if (token != null && !token.HasValues)
                                 {
-                                    decimal myDec;
-                                    if (decimal.TryParse(token.ToString(), out myDec))
+                                    if (decimal.TryParse(token.ToString(), out decimal myDec))
                                         d.Value = myDec;
                                     else
                                         d.Value = token.ToString();
@@ -256,7 +254,7 @@ namespace ExcelTohtml.Core
         public Dictionary<string, string> DataGetSet(Dictionary<string, string> data)
         {
             if (data == null)
-                return null;
+                return new Dictionary<string, string>();
 
             //Dicionary to Excel
             foreach (var item in data)
@@ -390,7 +388,7 @@ namespace ExcelTohtml.Core
             if (value == null)
                 return;
 
-            string cssItem = string.Empty;
+            string cssItem;
 
             //borders
             if (value is ExcelBorderItem temp)

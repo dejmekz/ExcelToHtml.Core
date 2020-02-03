@@ -1,19 +1,17 @@
-﻿using System;
-
-namespace ExcelTohtml.Core.Helpers
+﻿namespace ExcelTohtml.Core.Helpers
 {
-    public static class cString
+    public static class CString
     {
         #region String extensions
 
-        public static String SubstringAfter(this System.String value, System.String afterString)
+        public static string SubstringAfter(this string value, string afterString)
         {
-            Int32 position = value.LastIndexOf(afterString);
+            int position = value.LastIndexOf(afterString);
 
             if (position == -1)
                 return string.Empty;
 
-            Int32 adjustedPosition = position + afterString.Length;
+            int adjustedPosition = position + afterString.Length;
 
             if (adjustedPosition >= value.Length)
                 return string.Empty;
@@ -21,9 +19,9 @@ namespace ExcelTohtml.Core.Helpers
             return value.Substring(adjustedPosition);
         }
 
-        public static String SubstringBefore(this System.String value, System.String beforeSubstring)
+        public static string SubstringBefore(this string value, string beforeSubstring)
         {
-            Int32 position = value.IndexOf(beforeSubstring);
+            int position = value.IndexOf(beforeSubstring);
 
             if (position == -1)
                 return string.Empty;
