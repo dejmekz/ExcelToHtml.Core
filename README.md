@@ -1,5 +1,8 @@
-# ExcelToHtml.dll , ExcelToHtml.console.exe 
-Excel To HTML Library and Console Application
+#Author - Main project
+https://github.com/marcinKotynia/ExcelToHtml
+
+# ExcelToHtml.dll
+Excel To HTML Library in .Net Standart 2.1
 
 # List of Features (1.3)
 
@@ -80,96 +83,6 @@ WorksheetHtml.DataFromJson(string);
 Bytes[] html = WorksheetHtml.GetBytes();
 ```
 
-## ExcelToHtml.console.exe, Download https://github.com/marcinKotynia/ExcelToHtml/releases
-
-How to use:
-
-```bat
-@Echo Get HTML
-exceltohtml.console.exe Test1.xlsx
-@Echo Output Test1.xlsx.html
-
-@Echo Get XLSX
-exceltohtml.console.exe -t=Test1.xlsx -output=xlsx
-@Echo Output Test1.xlsx.xlsx
-
-@Echo Get html PAGE with https://www.w3schools.com/w3css/default.asp stylesheet
-exceltohtml.console.exe -t=Test1.xlsx -output=htmlw3css
-@Echo Output Test1.xlsx.html
-
-@Echo Get PDF !! Warning require https://wkhtmltopdf.org/downloads.html  
-exceltohtml.console.exe -t=Test1.xlsx -output=pdf
-@Echo  Output Test1.xlsx.pdf
-
-
-@Echo Convert and Merge data from url (REST API) 
-exceltohtml.console.exe -t=Test1.xlsx  -data=http://nflarrest.com/api/v1/crime
-@Echo Output Test1.xlsx.html
-
-```
-
-# Getting Pro
-
-## Parameters from text file (Yaml)
-
-Optional parameters for file with data Test1.xlsx.yaml
-
-```yaml
-# Set cell to 8
-A3: 8
-# Set cell to "Sample Text Value"
-A4: Sample Text Value
-# Set formula  , Formula must start with  = (equal)
-A5: =A2+A3
-# Instead of cell address you can set cell value in template for [[templatefield]]  and use from code
-'[[templatefield]]': Hello Template field
-# Output value , Value in yaml file (or dictionary) will be updated to calculated value at the end
-.A5: 15
-```
-
-## Merging Object or JSON 
-
-ExcelToHtml can use any object or JSON.
-Example will merge data from public REST API into Excel
-
-```bat
-exceltohtml.console.exe -t=Test1.xlsx  -data=http://nflarrest.com/api/v1/crime
-```
-
-```JSON
-[
-{"Category":"DUI","arrest_count":"187"},
-{"Category":"Drugs","arrest_count":"93"},
-{"Category":"Domestic violence","arrest_count":"84"},
-{"Category":"Assault","arrest_count":"65"},
-{"Category":"Disorderly conduct","arrest_count":"38"},
-{"Category":"Gun","arrest_count":"26"}
-]
-```
-
-To use this data you can put following template fields
-
-- *[[d[0][!].Category]]* will render to list of elements from Category
-- *[[d[0][!].arrest_count]]* will render to list of elements from arrest_count
-- *[[d[0][0].arrest_count]]* will render to element value 187
-
-# Evolution 
-
-Excel ScreenShot
-![Image](Test/Test1%20ExcelToHtml.png?raw=true)
-
-Version 1.0.0 result
-![1.0.0](Test/Test1%20ExcelToHtml1.0.0.png?raw=true)
-
-Version 1.1.0 result
-![1.1.0](/Test/Test1%20ExcelToHtml1.1.0.png?raw=true)
-
-Version 1.2.0 result
-![1.2.0](/Test/Test1%20ExcelToHtml1.2.0.png?raw=true)
-
-Version 1.3.0 result
-![1.3.0](/Test/Test1%20ExcelToHtml1.3.0.png?raw=true)
-
 # Technical Appendix
 
 ## List of Unsupported Features
@@ -184,7 +97,6 @@ There are 3 different scenarios
 1. Themes (Supported only default theme)
 2. System Colors with Index (supported)
 3. RGB colors (supported)
-
 
 This script will convert background color and font color to rgb colors if you use custom theme
 and colours. To use 
@@ -245,6 +157,4 @@ End Sub
 - xlsx file format is zip file with embeded xml files (https://en.wikipedia.org/wiki/Office_Open_XML )
 - Libraries thet will help you
 	- EPPlus http://epplus.codeplex.com/ 
-	- ClosedXml https://github.com/ClosedXML/ClosedXML 
 	- Microsoft wrapper for handling openxml https://www.nuget.org/packages/DocumentFormat.OpenXml 
-	
