@@ -15,7 +15,6 @@ namespace ExcelTohtml.Core
     public class ToHtml
     {
         private readonly string TableStyle = "border-collapse: collapse;font-family: helvetica, arial, sans-serif;";
-        private readonly Dictionary<string, string> Theme = new Dictionary<string, string>();
         private readonly bool DebugMode = false;
 
         //object Data;
@@ -37,15 +36,11 @@ namespace ExcelTohtml.Core
                 WorkSheet = Excel.Workbook.Worksheets[WorkSheetName];
             else
                 WorkSheet = Excel.Workbook.Worksheets.First();
-
-            Theme = Core.Theme.Init();
         }
 
         public ToHtml(ExcelWorksheet excelWorksheet)
         {
             WorkSheet = excelWorksheet ?? throw new ArgumentNullException(nameof(excelWorksheet));
-
-            Theme = Core.Theme.Init();
         }
 
         /// <summary>
@@ -80,7 +75,7 @@ namespace ExcelTohtml.Core
                                 merged = d.Worksheet.SelectedRange[WorkSheet.MergedCells[row, col]].Columns;
 
                             //11 default font size
-                            var x = ProcessCellStyle(WorkSheet.Cells[row, col], WorkSheet.Column(col).Width, 11, merged);
+                            var x = ProcessCellStyle(WorkSheet.Cells[row, col], WorkSheet.Column(col).Width, merged);
                             sb.AppendLine(x);
                             if (d.Merge)
                                 col += (merged - 1);
@@ -345,7 +340,7 @@ namespace ExcelTohtml.Core
             }
         }
 
-        private string ProcessCellStyle(ExcelRange input, double Width = -1, int FontSize = 11, int ColSpan = 0)
+        private string ProcessCellStyle(ExcelRange input, double Width = -1, int ColSpan = 0)
         {
             cellStyles = new Dictionary<string, string>();
 
@@ -378,7 +373,7 @@ namespace ExcelTohtml.Core
             else
                 value = System.Net.WebUtility.HtmlEncode(value);
 
-            string comment = (input.Comment != null && input.Comment.Text != "") ? ("title=\"" + input.Comment.Text + "\"") : string.Empty;
+            string comment = !string.IsNullOrEmpty(input.Comment?.Text) ? ("title=\"" + input.Comment.Text + "\"") : string.Empty;
 
             if (ColSpan > 0)
                 sb.AppendFormat("<td style=\"{0}\" eth-cell=\"{1}\" colspan=\"{2}\" {4} >{3}</td>",
