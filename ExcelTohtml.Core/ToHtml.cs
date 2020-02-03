@@ -1,5 +1,4 @@
-﻿using ClosedXML.Excel; //used from develop branch (fix with loading template )
-using ExcelTohtml.Core.Helpers;
+﻿using ExcelTohtml.Core.Helpers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OfficeOpenXml;
@@ -15,39 +14,38 @@ namespace ExcelTohtml.Core
 {
     public class ToHtml
     {
-        public string TableStyle = "border-collapse: collapse;font-family: helvetica, arial, sans-serif;";
-        public Dictionary<string, string> Theme = new Dictionary<string, string>();
-        public bool DebugMode = false;
+        private readonly string TableStyle = "border-collapse: collapse;font-family: helvetica, arial, sans-serif;";
+        private readonly Dictionary<string, string> Theme = new Dictionary<string, string>();
+        private readonly bool DebugMode = false;
 
         //object Data;
         private string ObjectJson;
 
         public readonly ExcelPackage Excel;
         private readonly ExcelWorksheet WorkSheet;
-        private readonly IXLWorksheet closedWorksheet; //closedxml  to get valid colors
         private Dictionary<string, string> TemplateFieldList;
         private Dictionary<string, string> cellStyles;
 
         public ToHtml(FileInfo excelFile, string WorkSheetName = null)
         {
             if (!excelFile.Exists)
-                throw new Exception(String.Format("File {0} Not Found", excelFile.FullName));
+                throw new FileNotFoundException(string.Format("File {0} Not Found", excelFile.FullName));
 
             Excel = new ExcelPackage(excelFile);
 
-            XLWorkbook workBook = new XLWorkbook(excelFile.FullName); //closedxml only temporary to get valid colors
-
             if (!string.IsNullOrEmpty(WorkSheetName))
-            {
                 WorkSheet = Excel.Workbook.Worksheets[WorkSheetName];
-                closedWorksheet = workBook.Worksheet(WorkSheetName);//closedxml only temporary to get valid colors
-            }
             else
-            {
                 WorkSheet = Excel.Workbook.Worksheets.First();
-                closedWorksheet = workBook.Worksheet(WorkSheet.Index);//closedxml only temporary to get valid colors
-            }
-            Theme = ExcelTohtml.Core.Theme.Init();
+
+            Theme = Core.Theme.Init();
+        }
+
+        public ToHtml(ExcelWorksheet excelWorksheet)
+        {
+            WorkSheet = excelWorksheet ?? throw new ArgumentNullException(nameof(excelWorksheet));
+
+            Theme = Core.Theme.Init();
         }
 
         /// <summary>
@@ -61,31 +59,6 @@ namespace ExcelTohtml.Core
             //GET DIMENSIONS
             var start = WorkSheet.Dimension.Start;
             var end = WorkSheet.Dimension.End;
-
-            //Detect based on values not styles
-            //int optimizedEndRow = 1;
-            //int optimizedEndCol = 1;
-
-            ////Optimize range
-            //for (int row = start.Row; row <= end.Row; row++)
-            //{
-            //    for (int col = start.Column; col <= end.Column; col++)
-            //    {
-            //        var d = WorkSheet.Cells[row, col];
-
-            //        if (!string.IsNullOrEmpty(d.Text) || d.Value != null)
-            //        {
-            //            if (row > optimizedEndRow)
-            //                optimizedEndRow = row;
-
-            //            if (col > optimizedEndCol)
-            //                optimizedEndCol = col;
-            //            // endOptimized = d.End;
-            //        }
-            //    }
-            //}
-
-            //end = new ExcelCellAddress(optimizedEndRow, optimizedEndCol);
 
             StringBuilder sb = new StringBuilder();
 
@@ -124,15 +97,6 @@ namespace ExcelTohtml.Core
 
             return string.Format("<table  style=\"{0}>\" data-eth-ms=\"{1}\" data-eth-date=\"{2}\">{3}</table>",
                 TableStyle, elapsedMs, DateTime.Now, sb.ToString());
-        }
-
-        /// <summary>
-        /// Get Excel
-        /// </summary>
-        /// <returns></returns>
-        public byte[] GetBytes()
-        {
-            return Excel.GetAsByteArray();
         }
 
         private void IterateArray(JToken test)
@@ -345,8 +309,13 @@ namespace ExcelTohtml.Core
 
         private void CalculateWorkbook()
         {
-            foreach (var _tempWorksheet in Excel.Workbook.Worksheets)
-                _tempWorksheet.Calculate();
+            if (Excel != null)
+            {
+                foreach (var _tempWorksheet in Excel.Workbook.Worksheets)
+                    _tempWorksheet.Calculate();
+            }
+            else
+                WorkSheet.Calculate();
         }
 
         /// <summary>
@@ -469,41 +438,29 @@ namespace ExcelTohtml.Core
 
         private string GetColor(string address, string type)
         {
-            IXLCell cell = closedWorksheet.Cell(address);
-            XLColor cellColor;
+            var cell = WorkSheet.Cells[address];
+            ExcelColor cellColor;
             if (type == "background-color")
                 cellColor = cell.Style.Fill.BackgroundColor;
             else if (type == "color")
-                cellColor = cell.Style.Font.FontColor;
+                cellColor = cell.Style.Font.Color;
             else if (type == "border-top")
-                cellColor = cell.Style.Border.TopBorderColor;
+                cellColor = cell.Style.Border.Top.Color;
             else if (type == "border-left")
-                cellColor = cell.Style.Border.LeftBorderColor;
+                cellColor = cell.Style.Border.Left.Color;
             else if (type == "border-right")
-                cellColor = cell.Style.Border.RightBorderColor;
+                cellColor = cell.Style.Border.Right.Color;
             else if (type == "border-bottom")
-                cellColor = cell.Style.Border.BottomBorderColor;
+                cellColor = cell.Style.Border.Bottom.Color;
             else
-                return String.Empty;
+                return string.Empty;
 
-            if (cellColor.ColorType == XLColorType.Color)
-            {
-                return "#" + cellColor.Color.ToHex().Remove(0, 2);
-            }
-            else if (cellColor.ColorType == XLColorType.Indexed)
-            {
-                if (cellColor.Color.Name != "Transparent")
-                    return "#" + cellColor.Color.ToHex().Remove(0, 2);
-            }
-            else  //(cell.Style.Fill.BackgroundColor.ColorType == XLColorType.Theme)
-            {
-                string value = "";
-                if (Theme.TryGetValue(cellColor.ThemeColor.ToString(), out value))
-                    return "#" + value.Remove(0, 2);
-                else
-                    Console.WriteLine("Theme not found {2} cell:{0}{1}", cell.Address.ColumnLetter, cell.Address.RowNumber, cellColor.ThemeColor);
-            }
-            return string.Empty;
+            if (string.IsNullOrEmpty(cellColor.Rgb))
+                return string.Empty;
+
+            var intColor = int.Parse("FFFFFF00", System.Globalization.NumberStyles.HexNumber);
+            var color = System.Drawing.Color.FromArgb(intColor);
+            return System.Drawing.ColorTranslator.ToHtml(color);
         }
     }
 }
