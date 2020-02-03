@@ -1,4 +1,4 @@
-﻿namespace ExcelTohtml.Core.Helpers
+﻿namespace ExcelToHtml.Helpers
 {
     public static class CString
     {

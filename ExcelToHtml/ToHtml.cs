@@ -1,4 +1,4 @@
-﻿using ExcelTohtml.Core.Helpers;
+﻿using ExcelToHtml.Helpers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OfficeOpenXml;
@@ -10,7 +10,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 
-namespace ExcelTohtml.Core
+namespace ExcelToHtml
 {
     public class ToHtml
     {

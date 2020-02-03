@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>	
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -12,6 +12,8 @@
     <Description>Convert Excel to HTML - Support for .xlsx format (Microsoft Office 2007+)</Description>
     <LangVersion>latest</LangVersion>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <AssemblyName>ExcelToHtml</AssemblyName>
+    <RootNamespace>ExcelToHtml</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

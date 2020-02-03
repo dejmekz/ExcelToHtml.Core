@@ -3,7 +3,7 @@ using OfficeOpenXml.Style;
 using System;
 using System.Collections.Generic;
 
-namespace ExcelTohtml.Core.Helpers
+namespace ExcelToHtml.Helpers
 {
     public static class CList
     {

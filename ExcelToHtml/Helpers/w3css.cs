@@ -1,4 +1,4 @@
-﻿namespace ExcelTohtml.Core.Helpers
+﻿namespace ExcelToHtml.Helpers
 {
     //Template For HTML
     public static class Strings
